@@ -50,6 +50,10 @@ export const config = {
   runner: "local",
   port: 4723,
 
+  // Native Android tests don't need a virtual display.
+  // xvfb-run wrapping breaks worker IPC (Error: write EINVAL).
+  autoXvfb: false,
+
   specs: ["./test/specs/**/*.js"],
   exclude: [],
 
