@@ -1,0 +1,100 @@
+
+name: Chargezone Mobile Automation
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  emulator-tests:
+    name: Chargezone Android Emulator Tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout project
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Step 3: Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Step 4: Install project dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # Step 5: Install Appium Server and Driver
+      - name: Install Appium
+        run: |
+          npm install -g appium@3
+          appium driver install uiautomator2
+
+      # Step 6: Start Android Emulator
+      - name: Run Tests on Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+
+          emulator-options: >-
+            -no-window
+            -no-audio
+            -no-boot-anim
+            -gpu swiftshader_indirect
+
+          disable-animations: true
+
+          script: |
+            echo "Android Emulator Started"
+
+            export MOBILE_TARGET=emulator
+            export ANDROID_VERSION=14
+
+            echo "Installing Chargezone APK"
+
+            adb install -r apk/merged-uat-new-2.apk
+
+            echo "Chargezone APK Installed Successfully"
+
+            echo "Starting WDIO Automation"
+
+            npx wdio run ./wdio.conf.js
+
+      # Step 7: Generate Allure Report
+      - name: Generate Allure Report
+        if: always()
+        run: npm run allure:generate
+        continue-on-error: true
+
+      # Step 8: Upload Execution Results
+      - name: Upload Emulator Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chargezone-emulator-results
+
+          path: |
+            reports/
+            allure-report/
+            screenshots/
+            logs/
+            log/
+
+          if-no-files-found: warn
+          retention-days: 15

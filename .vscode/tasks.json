@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run payyap_End_To_End.js spec",
+			"type": "shell",
+			"command": "npx wdio run wdio.conf.js --spec test/specs/payyap_End_To_End.js",
+			"args": [],
+			"problemMatcher": [
+				"$mocha"
+			],
+			"group": "test"
+		}
+	]
+}
