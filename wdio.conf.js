@@ -434,7 +434,7 @@ const mobileCapabilities = {
     platformName: "Android",
     "appium:deviceName": "Android Emulator",
     "appium:udid": "emulator-5554",
-    "appium:platformVersion": "16",
+    "appium:platformVersion": process.env.ANDROID_VERSION || "15",
     "appium:automationName": "UiAutomator2",
 
     "appium:appPackage": "com.dev.chargezone",
