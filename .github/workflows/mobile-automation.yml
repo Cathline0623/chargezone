@@ -1,81 +1,75 @@
-
 name: Chargezone Mobile Automation
 
 on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 jobs:
   emulator-tests:
     name: Chargezone Android Emulator Tests
-
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
-      # Step 1: Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # Step 2: Download APK from Git LFS
-      - name: Download APK from Git LFS
+      - name: Validate APK from Git LFS
         run: |
           git lfs install
           git lfs pull
-
-          echo "Checking APK file"
           ls -lh apk/merged-uat-new-2.apk
-
-          echo "Checking APK file type"
           file apk/merged-uat-new-2.apk
+          unzip -tq apk/merged-uat-new-2.apk
 
-          echo "Validating APK archive"
-          unzip -t apk/merged-uat-new-2.apk
+      # NEW: give the runner user access to /dev/kvm (hardware acceleration)
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
 
-      # Step 3: Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      # Step 4: Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Step 5: Install Dependencies
       - name: Install Dependencies
         run: npm ci
 
-      # Step 6: Install Appium and UiAutomator2
       - name: Install Appium
         run: |
           npm install -g appium@3
-
           appium driver install uiautomator2
-
-          echo "Appium Version"
           appium --version
-
-          echo "Installed Drivers"
           appium driver list --installed
 
-      # Step 7: Run Tests on Android Emulator
       - name: Run Tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_6
-
+          ram-size: 4096M
+          cores: 4
+          heap-size: 576M
+          emulator-boot-timeout: 900
+          disable-animations: true
+          disable-linux-hw-accel: false
+          force-avd-creation: false
           emulator-options: >-
             -no-window
             -no-audio
@@ -83,44 +77,13 @@ jobs:
             -no-snapshot
             -gpu swiftshader_indirect
             -no-metrics
+          script: bash ./ci-run.sh
 
-          disable-animations: true
-
-          script: |
-            echo "Android Emulator Started"
-
-            export MOBILE_TARGET=emulator
-            export ANDROID_VERSION=15
-
-            echo "Checking ADB Connection"
-            adb devices
-
-            echo "Checking Android Version"
-            adb shell getprop ro.build.version.release
-
-            echo "Checking Android SDK"
-            adb shell getprop ro.build.version.sdk
-
-            echo "Checking APK"
-            ls -lh apk/merged-uat-new-2.apk
-            unzip -t apk/merged-uat-new-2.apk
-
-            echo "Installing Chargezone APK"
-            adb install -r apk/merged-uat-new-2.apk
-
-            echo "Verifying Chargezone Installation"
-            adb shell pm list packages | grep chargezone
-
-            echo "Starting WebdriverIO Automation"
-            npx wdio run ./wdio.conf.js
-
-      # Step 8: Generate Allure Report
       - name: Generate Allure Report
         if: always()
         run: npm run allure:generate
         continue-on-error: true
 
-      # Step 9: Upload Test Results
       - name: Upload Emulator Test Results
         if: always()
         uses: actions/upload-artifact@v4
