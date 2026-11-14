@@ -3,8 +3,9 @@ import { tapByLatLng } from '../utils/mapTap.js';
 import { expect } from '@wdio/globals';
 import testData from '../datasheet/chargezone.js';
 import { keywords } from '../keyword.js';
+import { getStationCoordinates } from '../utils/Stationapi.js';
+
 import fs from 'fs';
-import { getStationCoordinates } from '../utils/stationApi.js';
 
 
 export class ChargezonePage {
