@@ -355,24 +355,6 @@ export class ChargezonePage {
     }
 
 
-
-
-
-    // async selectTransactionState() {
-    //     const status = testData.paymentData.transactionState;
-
-    //     await this.keywords.click(this.locators.transactionStateDropdown);
-
-    //     await this.keywords.click(
-    //         this.locators.transactionStateOption(status)
-    //     );
-
-    //     console.log(`Transaction State Selected: ${status}`);
-    //     await this.keywords.AllureScreenshot('Transaction State Selected');
-
-    //     // await this.keywords.click(this.locators.submitButton);
-    // }
-
     async selectTransactionState() {
         const status = testData.paymentData.transactionState;
 
