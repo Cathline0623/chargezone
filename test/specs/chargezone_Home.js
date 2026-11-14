@@ -1,5 +1,6 @@
 import { ChargezonePage } from '../../pages/ChargezonePage.js';
-import testData from '../datasheet/chargezone.js';
+// import testData from '../datasheet/chargezone.js';
+import testData from '../../datasheet/chargezone.js';
 
 
 describe('Chargezone Select Location Flow', () => {
@@ -42,9 +43,6 @@ describe('Chargezone Select Location Flow', () => {
         await chargezonePage.clickStationSearchResult();
         await chargezonePage.clickChargeNow();
         await browser.pause(3000);
-
-
-
 
         await chargezonePage.clickSkip();
 
