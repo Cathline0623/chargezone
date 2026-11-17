@@ -45,6 +45,35 @@ describe("Healync Login", () => {
         console.log("Login button clicked successfully");
         await keyword.AllureScreenshot('Login Successful');
 
+
+
+
+// Wait after login
+await driver.pause(6000);
+
+console.log("Login button clicked successfully");
+await keyword.AllureScreenshot('Login Successful');
+
+// Capture current screen hierarchy
+const pageSource = await driver.getPageSource();
+console.log("POST LOGIN PAGE SOURCE:\n", pageSource);
+
+// Print available buttons
+const buttons = await $$('//android.widget.Button');
+
+console.log("Total buttons:", buttons.length);
+
+for (let i = 0; i < buttons.length; i++) {
+    console.log({
+        index: i,
+        text: await buttons[i].getText(),
+        contentDesc: await buttons[i].getAttribute('content-desc'),
+        resourceId: await buttons[i].getAttribute('resource-id'),
+        className: await buttons[i].getAttribute('className')
+    });
+}
+
+
         const addButton = await $(
             '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[5]/android.widget.Button'
         );
