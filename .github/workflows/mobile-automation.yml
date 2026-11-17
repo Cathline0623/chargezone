@@ -72,7 +72,7 @@ jobs:
         with:
           lfs: true
 
-      - name: Select specs from checkboxes
+      -      - name: Select specs from checkboxes
         env:
           EVENT: ${{ github.event_name }}
           RUN_ALL: ${{ inputs.run_all }}
@@ -105,10 +105,21 @@ jobs:
             exit 1
           fi
 
+          # Safety check: app and specs must match
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$APP_TARGET" = "chargezone" ] && echo "$SPECS" | grep -q "Healync_Login.js"; then
+              echo "ERROR: app is 'chargezone' but a Healync spec is ticked. Select app = healync."
+              exit 1
+            fi
+            if [ "$APP_TARGET" = "healync" ] && echo "$SPECS" | grep -Eq "chargezone|Edit_Profile|My_EV"; then
+              echo "ERROR: app is 'healync' but a Chargezone spec is ticked. Select app = chargezone."
+              exit 1
+            fi
+          fi
+
           echo "App   : $APP_TARGET"
           echo "Specs : ${SPECS:-ALL (default for app)}"
           echo "SPEC=$SPECS" >> "$GITHUB_ENV"
-
       - name: Validate APKs from Git LFS
         run: |
           git lfs install
