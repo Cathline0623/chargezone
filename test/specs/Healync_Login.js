@@ -40,7 +40,7 @@ describe("Healync Login", () => {
         await signInButton.click();
 
         // Wait after login
-        await driver.pause(5000);
+        await driver.pause(6000);
 
         console.log("Login button clicked successfully");
         await keyword.AllureScreenshot('Login Successful');
