@@ -8,8 +8,8 @@ describe('ChargeZone Plan Trip Flow', () => {
 
     it('ChargeZone Plan Trip Flow', async () => {
 
-        // Step 1: Allow Android permission
-        await chargezonePage.allowPermissionIfDisplayed();
+        // // Step 1: Allow Android permission
+        // await chargezonePage.allowPermissionIfDisplayed();
 
         // Step 2: Click Get Started
         await chargezonePage.clickGetStarted();
