@@ -1,5 +1,5 @@
 
-import { keywords } from '../keyword.js';
+import { keywords } from '../../keyword.js';
 
 describe("Healync Login", () => {
 
@@ -87,7 +87,7 @@ describe("Healync Login", () => {
 
         await patientName.waitForDisplayed({ timeout: 10000 });
         await patientName.click();
-        await patientName.setValue("Test Demo");
+        await patientName.setValue("Test Demotest");
         await keyword.AllureScreenshot('Patient Name Entered');
         
         // Enter Phone Number
