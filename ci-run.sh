@@ -27,7 +27,7 @@ case "$APP_TARGET" in
     DEFAULT_SPECS="chargezone_AddWallet.js,chargezone_Home.js,chargezone.js,Edit_Profile.js,My_EV.js"
     ;;
   healync)
-    APK="apk/healync.apk"            # CHANGE to your real Healync APK file name
+    APK="apk/healyncapp-release-1.apk"
     PKG="com.healync.healync_mobile"
     DEFAULT_SPECS="Healync_Login.js"
     ;;
@@ -46,13 +46,13 @@ adb shell pm list packages | grep "$PKG"
 echo "Resolving launch activity (for debugging)"
 adb shell cmd package resolve-activity --brief "$PKG" || true
 
-# Use the typed specs, or fall back to the app's default list
+# Use the selected specs, or fall back to the app's default list
 LIST="${SPEC:-$DEFAULT_SPECS}"
 
 SPEC_ARGS=()
 IFS=',' read -ra NAMES <<< "$LIST"
 for name in "${NAMES[@]}"; do
-  name="$(echo "$name" | xargs)"      # trim spaces
+  name="$(echo "$name" | xargs)"
   [ -z "$name" ] && continue
   if [ ! -f "test/specs/$name" ]; then
     echo "ERROR: test/specs/$name not found (names are case-sensitive)"
