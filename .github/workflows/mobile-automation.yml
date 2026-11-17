@@ -72,7 +72,7 @@ jobs:
         with:
           lfs: true
 
-      -      - name: Select specs from checkboxes
+      - name: Select specs from checkboxes
         env:
           EVENT: ${{ github.event_name }}
           RUN_ALL: ${{ inputs.run_all }}
@@ -120,6 +120,7 @@ jobs:
           echo "App   : $APP_TARGET"
           echo "Specs : ${SPECS:-ALL (default for app)}"
           echo "SPEC=$SPECS" >> "$GITHUB_ENV"
+
       - name: Validate APKs from Git LFS
         run: |
           git lfs install
@@ -129,7 +130,74 @@ jobs:
 
       - name: Enable KVM
         run: |
-          echo
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Appium
+        run: |
+          npm install -g appium@3
+          appium driver install uiautomator2
+          appium --version
+          appium driver list --installed
+
+      - name: Run Tests on Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          cores: 4
+          heap-size: 576M
+          emulator-boot-timeout: 900
+          disable-animations: true
+          disable-linux-hw-accel: false
+          force-avd-creation: false
+          emulator-options: >-
+            -no-window
+            -no-audio
+            -no-boot-anim
+            -no-snapshot
+            -gpu swiftshader_indirect
+            -no-metrics
+          script: bash ./ci-run.sh
+
+      - name: Generate Allure Report
+        if: always()
+        run: npm run allure:generate
+        continue-on-error: true
+
+      - name: Upload Emulator Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-results-${{ env.APP_TARGET }}
+          path: |
+            reports/
+            allure-report/
+            screenshots/
+            logs/
+            log/
+          if-no-files-found: warn
+          retention-days: 15
 
 
 
