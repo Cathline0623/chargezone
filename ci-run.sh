@@ -24,12 +24,12 @@ case "$APP_TARGET" in
   chargezone)
     APK="apk/merged-uat-new-2.apk"
     PKG="com.dev.chargezone"
-    DEFAULT_SPECS="./test/specs/chargezone*.js ./test/specs/Edit_Profile.js ./test/specs/My_EV.js"
+    DEFAULT_SPECS="chargezone_AddWallet.js,chargezone_Home.js,chargezone.js,Edit_Profile.js,My_EV.js"
     ;;
   healync)
     APK="apk/healync.apk"            # CHANGE to your real Healync APK file name
     PKG="com.healync.healync_mobile"
-    DEFAULT_SPECS="./test/specs/Healync_Login.js"
+    DEFAULT_SPECS="Healync_Login.js"
     ;;
   *)
     echo "Unknown APP_TARGET: $APP_TARGET"
@@ -46,17 +46,23 @@ adb shell pm list packages | grep "$PKG"
 echo "Resolving launch activity (for debugging)"
 adb shell cmd package resolve-activity --brief "$PKG" || true
 
-SPEC_ARGS=""
-if [ -n "$SPEC" ]; then
-  SPEC_ARGS="--spec ./test/specs/$SPEC"
-else
-  for s in $DEFAULT_SPECS; do
-    SPEC_ARGS="$SPEC_ARGS --spec $s"
-  done
-fi
+# Use the typed specs, or fall back to the app's default list
+LIST="${SPEC:-$DEFAULT_SPECS}"
 
-echo "Starting WebdriverIO automation"
-npx wdio run ./wdio.conf.js $SPEC_ARGS
+SPEC_ARGS=()
+IFS=',' read -ra NAMES <<< "$LIST"
+for name in "${NAMES[@]}"; do
+  name="$(echo "$name" | xargs)"      # trim spaces
+  [ -z "$name" ] && continue
+  if [ ! -f "test/specs/$name" ]; then
+    echo "ERROR: test/specs/$name not found (names are case-sensitive)"
+    exit 1
+  fi
+  SPEC_ARGS+=(--spec "./test/specs/$name")
+done
+
+echo "Running specs: $LIST"
+npx wdio run ./wdio.conf.js "${SPEC_ARGS[@]}"
 
 
 
