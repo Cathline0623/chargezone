@@ -7,17 +7,55 @@ on:
   workflow_dispatch:
     inputs:
       app:
-        description: "Which app to test"
+        description: 'Which app to test'
         required: true
         default: chargezone
         type: choice
         options:
           - chargezone
           - healync
-      spec:
-        description: "Spec file name (e.g. Healync_Login.js). Empty = run all specs of that app"
+
+      run_all:
+        description: 'Run ALL specs of the selected app'
         required: false
-        default: ""
+        type: boolean
+        default: false
+
+      chargezone_AddWallet:
+        description: 'Run chargezone_AddWallet.js'
+        required: false
+        type: boolean
+        default: false
+
+      chargezone_Home:
+        description: 'Run chargezone_Home.js'
+        required: false
+        type: boolean
+        default: false
+
+      chargezone:
+        description: 'Run chargezone.js'
+        required: false
+        type: boolean
+        default: false
+
+      Edit_Profile:
+        description: 'Run Edit_Profile.js'
+        required: false
+        type: boolean
+        default: false
+
+      My_EV:
+        description: 'Run My_EV.js'
+        required: false
+        type: boolean
+        default: false
+
+      Healync_Login:
+        description: 'Run Healync_Login.js'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   emulator-tests:
@@ -27,13 +65,49 @@ jobs:
 
     env:
       APP_TARGET: ${{ github.event.inputs.app || 'chargezone' }}
-      SPEC: ${{ github.event.inputs.spec || '' }}
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Select specs from checkboxes
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_ALL: ${{ inputs.run_all }}
+          S_ADDWALLET: ${{ inputs.chargezone_AddWallet }}
+          S_HOME: ${{ inputs.chargezone_Home }}
+          S_CHARGEZONE: ${{ inputs.chargezone }}
+          S_EDITPROFILE: ${{ inputs.Edit_Profile }}
+          S_MYEV: ${{ inputs.My_EV }}
+          S_HEALYNC: ${{ inputs.Healync_Login }}
+        run: |
+          SPECS=""
+          add() {
+            if [ "$2" = "true" ]; then
+              SPECS="${SPECS:+$SPECS,}$1"
+            fi
+            return 0
+          }
+
+          if [ "$RUN_ALL" != "true" ]; then
+            add chargezone_AddWallet.js "$S_ADDWALLET"
+            add chargezone_Home.js      "$S_HOME"
+            add chargezone.js           "$S_CHARGEZONE"
+            add Edit_Profile.js         "$S_EDITPROFILE"
+            add My_EV.js                "$S_MYEV"
+            add Healync_Login.js        "$S_HEALYNC"
+          fi
+
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$RUN_ALL" != "true" ] && [ -z "$SPECS" ]; then
+            echo "ERROR: Select at least one spec or tick 'run_all'"
+            exit 1
+          fi
+
+          echo "App   : $APP_TARGET"
+          echo "Specs : ${SPECS:-ALL (default for app)}"
+          echo "SPEC=$SPECS" >> "$GITHUB_ENV"
 
       - name: Validate APKs from Git LFS
         run: |
@@ -44,74 +118,7 @@ jobs:
 
       - name: Enable KVM
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Install Appium
-        run: |
-          npm install -g appium@3
-          appium driver install uiautomator2
-          appium --version
-          appium driver list --installed
-
-      - name: Run Tests on Android Emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          ram-size: 4096M
-          cores: 4
-          heap-size: 576M
-          emulator-boot-timeout: 900
-          disable-animations: true
-          disable-linux-hw-accel: false
-          force-avd-creation: false
-          emulator-options: >-
-            -no-window
-            -no-audio
-            -no-boot-anim
-            -no-snapshot
-            -gpu swiftshader_indirect
-            -no-metrics
-          script: bash ./ci-run.sh
-
-      - name: Generate Allure Report
-        if: always()
-        run: npm run allure:generate
-        continue-on-error: true
-
-      - name: Upload Emulator Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: emulator-results-${{ env.APP_TARGET }}
-          path: |
-            reports/
-            allure-report/
-            screenshots/
-            logs/
-            log/
-          if-no-files-found: warn
-          retention-days: 15
+          echo
 
 
 
