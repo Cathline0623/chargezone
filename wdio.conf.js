@@ -44,11 +44,12 @@
 
 
 
-
 require('dotenv').config();
 const devices = require('./config/devices');
 
 exports.config = {
+  autoXvfb: false,
+
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
 
@@ -64,6 +65,8 @@ exports.config = {
     ['browserstack', {
       app: process.env.BS_APP_URL,
       buildIdentifier: '#${BUILD_NUMBER}',
+      testObservability: false,
+      browserstackLocal: false,
     }],
   ],
 
