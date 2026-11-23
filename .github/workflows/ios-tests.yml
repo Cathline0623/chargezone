@@ -59,8 +59,24 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Setup Java (Allure ku venum)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Install Dependencies
         run: npm ci
+
+      - name: Check secrets (temporary debug)
+        env:
+          U: ${{ secrets.BROWSERSTACK_USERNAME }}
+          K: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          A: ${{ secrets.IOS_APP_URL }}
+        run: |
+          echo "USER length: ${#U}"
+          echo "KEY length: ${#K}"
+          echo "APP length: ${#A}"
 
       - name: Run Tests on BrowserStack iOS
         env:
@@ -71,11 +87,34 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
         run: bash ./ci-run-ios.sh
 
-      - name: Upload iOS Test Results
+      - name: Generate Allure Report
+        if: always()
+        run: npm run allure:generate
+        continue-on-error: true
+
+      - name: Upload Allure Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-results
+          name: allure-report-ios
+          path: allure-report/
+          if-no-files-found: warn
+          retention-days: 15
+
+      - name: Upload Raw Allure Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-ios
+          path: allure-results/
+          if-no-files-found: warn
+          retention-days: 15
+
+      - name: Upload iOS Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-logs
           path: |
             logs/
             log/

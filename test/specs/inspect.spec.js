@@ -1,3 +1,22 @@
+const allure = require('@wdio/allure-reporter').default;
+
+// Reusable step wrapper: pass aana green, fail aana red-a report la kaattum
+const step = async (name, fn) => {
+  allure.startStep(name);
+  try {
+    const result = await fn();
+    allure.endStep('passed');
+    return result;
+  } catch (e) {
+    allure.endStep('failed');
+    throw e;
+  }
+};
+
+const attachScreenshot = async (name) => {
+  const png = await browser.takeScreenshot();
+  allure.addAttachment(name, Buffer.from(png, 'base64'), 'image/png');
+};
 describe('Healync iOS - Login and Add Patient', () => {
 
   // ---------- HELPERS ----------
@@ -56,22 +75,26 @@ describe('Healync iOS - Login and Add Patient', () => {
   };
 
   it('Should log in and register a new patient', async () => {
-
+  await attachScreenshot('Before login - Dashboard');
     // ---------- LOGIN ----------
     const username = await $('//XCUIElementTypeTextField[@name="Phone number"]');
     await username.waitForDisplayed({ timeout: 30000 });
     await username.setValue('test_test');
+      await attachScreenshot('Enter username');
+    
 
     const password = await $('//XCUIElementTypeTextField[@name="Password"]');
     await password.waitForDisplayed({ timeout: 30000 });
     await password.click();
     await browser.pause(500);
     await browser.keys('Heal@sync1'.split(''));
+      await attachScreenshot('Enter password');
 
     const signInButton = await $('//XCUIElementTypeButton[@name="Sign In"]');
     await signInButton.waitForDisplayed({ timeout: 30000 });
     await signInButton.click();
     console.log('Login button clicked');
+      await attachScreenshot('After clicking Sign In');
 
     // ---------- VERIFY LOGIN POPUP (soft check) ----------
     const toastTitle = '-ios predicate string:name == "Login successful!"';
@@ -89,6 +112,7 @@ describe('Healync iOS - Login and Add Patient', () => {
       console.log('Toast not caught (it may have disappeared quickly)');
     }
 
+      await attachScreenshot('After login - Dashboard');
     // ---------- OPEN ADD PATIENT ----------
     const dashboardMarker = await $('-ios predicate string:name CONTAINS[c] "Appointments"');
     await dashboardMarker.waitForExist({ timeout: 20000 });
@@ -108,6 +132,7 @@ describe('Healync iOS - Login and Add Patient', () => {
     await addPatientMenuOption.waitForExist({ timeout: 10000 });
     await browser.pause(600);
     await safeTap(addPatientMenuOption, true);
+      await attachScreenshot('Click Add Patient option');
 
     // 3. Wait for navigation to the Add Patient form
     await browser.waitUntil(
@@ -130,6 +155,7 @@ describe('Healync iOS - Login and Add Patient', () => {
     );
     await salutation.waitForExist({ timeout: 10000 });
     await safeTap(salutation, true);
+      await attachScreenshot('Click Salutation dropdown');
 
     // Step 2: Choose Mr from the list (skipped if no option appears)
     const mrOption = await $(byText('XCUIElementTypeButton', 'Mr'));
@@ -143,16 +169,18 @@ describe('Healync iOS - Login and Add Patient', () => {
     const patientName = await $(byText('XCUIElementTypeTextField', 'patient name'));
     await patientName.waitForExist({ timeout: 10000 });
     await patientName.setValue('Testing Test');
-
+    await attachScreenshot('Enter patient name');
     // Step 4: Phone number
     const phoneNumber = await $(byText('XCUIElementTypeTextField', 'phone'));
     await phoneNumber.waitForExist({ timeout: 10000 });
     await phoneNumber.setValue('9876545678');
+    await attachScreenshot('Enter phone number');
 
     // Step 5: Referral source
     const referralSource = await $(byText('XCUIElementTypeTextField', 'referral'));
     await referralSource.waitForExist({ timeout: 10000 });
     await referralSource.setValue('Test');
+    await attachScreenshot('Enter referral source');
 
     // Step 6: Hide keyboard before scrolling down
     await dismissKeyboard();
@@ -165,6 +193,7 @@ describe('Healync iOS - Login and Add Patient', () => {
     await safeTap(age, true);
     await browser.pause(400);
     await browser.keys('35'.split(''));
+    await attachScreenshot('Enter age');
 
     // Dismiss numeric keypad so Male and Save Patient are unobstructed
     await dismissKeyboard();
@@ -175,6 +204,7 @@ describe('Healync iOS - Login and Add Patient', () => {
     await gender.waitForExist({ timeout: 10000 });
     await scrollToElement(gender);
     await safeTap(gender, true);
+    await attachScreenshot('Select gender');
 
     // Step 9: Save patient
     const saveButton = await $(
@@ -183,6 +213,7 @@ describe('Healync iOS - Login and Add Patient', () => {
     await saveButton.waitForExist({ timeout: 10000 });
     await scrollToElement(saveButton);
     await safeTap(saveButton, true);
+    await attachScreenshot('Click Save Patient');
 
     // ---------- VERIFY SUCCESS ----------
     const successMessage = '-ios predicate string:name CONTAINS[c] "Patient registered successfully"';
@@ -195,6 +226,7 @@ describe('Healync iOS - Login and Add Patient', () => {
       }
     );
     console.log('Patient registered successfully');
+    await attachScreenshot('Patient registered successfully');
   });
-
+  
 });
