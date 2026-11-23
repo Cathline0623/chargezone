@@ -52,7 +52,10 @@ exports.config = {
 
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
-
+hostname: 'hub.browserstack.com',
+port: 443,
+protocol: 'https',
+path: '/wd/hub',
   specs: ['./test/specs/**/*.js'],
   maxInstances: 2,
   logLevel: 'info',
