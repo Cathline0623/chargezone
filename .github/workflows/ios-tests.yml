@@ -1,0 +1,83 @@
+name: Healync iOS Automation (BrowserStack)
+
+on:
+  push:
+    branches: [ios]
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: 'Run ALL iOS specs'
+        required: false
+        type: boolean
+        default: true
+
+      inspect:
+        description: 'Run inspect.spec.js'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  ios-tests:
+    name: iOS BrowserStack Tests (Healync)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select specs from checkboxes
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_ALL: ${{ inputs.run_all }}
+          S_INSPECT: ${{ inputs.inspect }}
+        run: |
+          SPECS=""
+          add() {
+            if [ "$2" = "true" ]; then
+              SPECS="${SPECS:+$SPECS,}$1"
+            fi
+            return 0
+          }
+
+          if [ "$RUN_ALL" != "true" ]; then
+            add inspect.spec.js "$S_INSPECT"
+          fi
+
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$RUN_ALL" != "true" ] && [ -z "$SPECS" ]; then
+            echo "ERROR: Select at least one spec or tick 'run_all'"
+            exit 1
+          fi
+
+          echo "Specs : ${SPECS:-ALL}"
+          echo "SPEC=$SPECS" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests on BrowserStack iOS
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BS_APP_URL: ${{ secrets.IOS_APP_URL }}
+          BUILD_NAME: Healync iOS #${{ github.run_number }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: bash ./ci-run-ios.sh
+
+      - name: Upload iOS Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-results
+          path: |
+            logs/
+            log/
+          if-no-files-found: warn
+          retention-days: 15
