@@ -1,8 +1,138 @@
+# name: Healync iOS Automation (BrowserStack)
+
+# on:
+#   push:
+#     branches: [ios]
+#   workflow_dispatch:
+#     inputs:
+#       run_all:
+#         description: 'Run ALL iOS specs'
+#         required: false
+#         type: boolean
+#         default: true
+
+#       inspect:
+#         description: 'Run inspect.spec.js'
+#         required: false
+#         type: boolean
+#         default: false
+
+# jobs:
+#   ios-tests:
+#     name: iOS BrowserStack Tests (Healync)
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 60
+
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Select specs from checkboxes
+#         env:
+#           EVENT: ${{ github.event_name }}
+#           RUN_ALL: ${{ inputs.run_all }}
+#           S_INSPECT: ${{ inputs.inspect }}
+#         run: |
+#           SPECS=""
+#           add() {
+#             if [ "$2" = "true" ]; then
+#               SPECS="${SPECS:+$SPECS,}$1"
+#             fi
+#             return 0
+#           }
+
+#           if [ "$RUN_ALL" != "true" ]; then
+#             add inspect.spec.js "$S_INSPECT"
+#           fi
+
+#           if [ "$EVENT" = "workflow_dispatch" ] && [ "$RUN_ALL" != "true" ] && [ -z "$SPECS" ]; then
+#             echo "ERROR: Select at least one spec or tick 'run_all'"
+#             exit 1
+#           fi
+
+#           echo "Specs : ${SPECS:-ALL}"
+#           echo "SPEC=$SPECS" >> "$GITHUB_ENV"
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
+#           cache: npm
+
+#       - name: Setup Java 
+#         uses: actions/setup-java@v4
+#         with:
+#           distribution: temurin
+#           java-version: '17'
+
+#       - name: Install Dependencies
+#         run: npm ci
+
+#       - name: Check secrets (temporary debug)
+#         env:
+#           U: ${{ secrets.BROWSERSTACK_USERNAME }}
+#           K: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+#           A: ${{ secrets.IOS_APP_URL }}
+#         run: |
+#           echo "USER length: ${#U}"
+#           echo "KEY length: ${#K}"
+#           echo "APP length: ${#A}"
+
+#       - name: Run Tests on BrowserStack iOS
+#         env:
+#           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+#           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+#           BS_APP_URL: ${{ secrets.IOS_APP_URL }}
+#           BUILD_NAME: Healync iOS #${{ github.run_number }}
+#           BUILD_NUMBER: ${{ github.run_number }}
+#         run: bash ./ci-run-ios.sh
+
+#       - name: Generate Allure Report
+#         if: always()
+#         run: npm run allure:generate
+#         continue-on-error: true
+
+#       - name: Upload Allure Report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: allure-report-ios
+#           path: allure-report/
+#           if-no-files-found: warn
+#           retention-days: 15
+
+#       - name: Upload Raw Allure Results
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: allure-results-ios
+#           path: allure-results/
+#           if-no-files-found: warn
+#           retention-days: 15
+
+#       - name: Upload iOS Logs
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: ios-logs
+#           path: |
+#             logs/
+#             log/
+#           if-no-files-found: warn
+#           retention-days: 15
+
+
+
+
+
+
+
 name: Healync iOS Automation (BrowserStack)
 
 on:
   push:
     branches: [ios]
+
   workflow_dispatch:
     inputs:
       run_all:
@@ -34,23 +164,23 @@ jobs:
           S_INSPECT: ${{ inputs.inspect }}
         run: |
           SPECS=""
+
           add() {
             if [ "$2" = "true" ]; then
               SPECS="${SPECS:+$SPECS,}$1"
             fi
-            return 0
           }
 
-          if [ "$RUN_ALL" != "true" ]; then
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$RUN_ALL" != "true" ]; then
             add inspect.spec.js "$S_INSPECT"
+
+            if [ -z "$SPECS" ]; then
+              echo "ERROR: Select at least one spec or tick Run ALL"
+              exit 1
+            fi
           fi
 
-          if [ "$EVENT" = "workflow_dispatch" ] && [ "$RUN_ALL" != "true" ] && [ -z "$SPECS" ]; then
-            echo "ERROR: Select at least one spec or tick 'run_all'"
-            exit 1
-          fi
-
-          echo "Specs : ${SPECS:-ALL}"
+          echo "Specs: ${SPECS:-ALL}"
           echo "SPEC=$SPECS" >> "$GITHUB_ENV"
 
       - name: Setup Node.js
@@ -59,7 +189,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Setup Java 
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -83,7 +213,7 @@ jobs:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           BS_APP_URL: ${{ secrets.IOS_APP_URL }}
-          BUILD_NAME: Healync iOS #${{ github.run_number }}
+          BUILD_NAME: Healync iOS
           BUILD_NUMBER: ${{ github.run_number }}
         run: bash ./ci-run-ios.sh
 
