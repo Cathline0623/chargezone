@@ -59,7 +59,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Setup Java (Allure ku venum)
+      - name: Setup Java 
         uses: actions/setup-java@v4
         with:
           distribution: temurin

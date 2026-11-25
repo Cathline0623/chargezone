@@ -17,6 +17,29 @@ const attachScreenshot = async (name) => {
   const png = await browser.takeScreenshot();
   allure.addAttachment(name, Buffer.from(png, 'base64'), 'image/png');
 };
+
+const generatePatientName = () => {
+  const firstNames = [
+    'Arun', 'Vikram', 'Karthik', 'Rahul', 'Pranav',
+    'Ajay', 'Santhosh', 'Deepak', 'Manoj', 'Surya',
+    'Rohan', 'Aditya', 'Varun', 'Naveen', 'Harish',
+    'Rakesh', 'Gokul', 'Madhan', 'Vishal', 'Bharath'
+  ];
+
+  const lastNames = [
+    'Kumar', 'Raj', 'Anand', 'Dev', 'Sharma',
+    'Reddy', 'Krishnan', 'Verma', 'Prakash', 'Rajan',
+    'Mehta', 'Nair', 'Das', 'Kapoor', 'Menon'
+  ];
+
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+
+  return `${firstName} ${lastName}`;
+};
+
+
+
 describe('Healync iOS - Login and Add Patient', () => {
 
   // ---------- HELPERS ----------
@@ -165,11 +188,16 @@ describe('Healync iOS - Login and Add Patient', () => {
       console.log('No "Mr" option shown; assuming it is already selected');
     }
 
-    // Step 3: Patient name
-    const patientName = await $(byText('XCUIElementTypeTextField', 'patient name'));
-    await patientName.waitForExist({ timeout: 10000 });
-    await patientName.setValue('Testing Test');
-    await attachScreenshot('Enter patient name');
+
+// Step 3: Patient name
+const patientNameValue = generatePatientName();
+
+const patientName = await $(byText('XCUIElementTypeTextField', 'patient name'));
+await patientName.waitForExist({ timeout: 10000 });
+await patientName.setValue(patientNameValue);
+
+console.log(`Generated Patient Name: ${patientNameValue}`);
+await attachScreenshot(`Enter patient name - ${patientNameValue}`);
     // Step 4: Phone number
     const phoneNumber = await $(byText('XCUIElementTypeTextField', 'phone'));
     await phoneNumber.waitForExist({ timeout: 10000 });
